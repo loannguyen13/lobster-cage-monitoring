@@ -1,0 +1,14 @@
+# Môi trường Python
+.venv/
+venv/
+
+# File tạm của Python
+__pycache__/
+*.py[cod]
+
+# File chứa thông tin bí mật
+.env
+.env.*
+
+# Cấu hình IDE
+.vscode/
