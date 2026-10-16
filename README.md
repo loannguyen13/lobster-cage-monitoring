@@ -471,9 +471,9 @@ Dự án được phát triển theo mô hình cộng tác ba thành viên, sử
 
 | Member | Responsibility | Git Branch |
 |---|---|---|
-| Nguyễn Kim Loan | AI & Data Engineering | `feature/ai-data` |
-| Member 2 | Cloud & Backend Development | `feature/cloud-backend` |
-| Member 3 | Frontend Development & Documentation | `feature/frontend-docs` |
+| Nguyễn Kim Loan | AI & Data | `feature/ai-data` |
+| Nguyễn Thị Phương Quyên | Cloud & Backend Development | `feature/cloud-backend` |
+| Huỳnh Thị Như Hiếu | Frontend Development & Documentation | `feature/frontend-docs` |
 
 *Thay “Member 2” và “Member 3” bằng tên chính thức của các thành viên.*
 
