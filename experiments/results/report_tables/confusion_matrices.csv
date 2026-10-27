@@ -1,0 +1,5 @@
+horizon_minutes,model,threshold_mg_L,TP,FP,FN,TN
+15,Persistence,4.0,46,3,3,250
+15,Persistence,3.0,21,3,3,275
+15,XGBoost,4.0,47,3,2,250
+15,XGBoost,3.0,20,2,4,276

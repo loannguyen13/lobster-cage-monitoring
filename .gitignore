@@ -1,14 +1,19 @@
-# Môi trường Python
-.venv/
-venv/
+# Visual Studio local files
+.vs/
 
-# File tạm của Python
+# Python cache
 __pycache__/
 *.py[cod]
 
-# File chứa thông tin bí mật
+# Virtual environment
+.venv/
+venv/
+
+# Environment variables and secrets
 .env
 .env.*
 
-# Cấu hình IDE
-.vscode/
+# Logs and temporary files
+*.log
+.DS_Store
+Thumbs.db
