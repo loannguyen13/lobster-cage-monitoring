@@ -1,0 +1,26 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "AzureWebJobsStorage": "<real Azure Storage connection string>",
+    "IOTHUB_EVENTS_CONNECTION": "<Event Hub-compatible connection string with ServiceConnect>",
+    "IOTHUB_EVENTHUB_NAME": "<Event Hub-compatible name>",
+    "IOTHUB_CONSUMER_GROUP": "$Default",
+    "QUARANTINE_STORAGE_CONNECTION": "<same real Storage connection string>",
+    "QUARANTINE_CONTAINER": "telemetry-rejected",
+    "PGHOST": "postgre-aquaculture-monitoring-dev.postgres.database.azure.com",
+    "PGPORT": "5432",
+    "PGDATABASE": "lobster_farm",
+    "PGUSER": "lobster_ingest",
+    "PGPASSWORD": "<set privately>",
+    "PGSSLROOTCERT": "certs/azure-postgresql-roots.pem",
+    "API_PGUSER": "lobster_api",
+    "API_PGPASSWORD": "<set privately>",
+    "AUTH_JWT_SECRET": "<generate a random secret of at least 32 bytes>",
+    "AUTH_TOKEN_MINUTES": "60",
+    "API_ALLOWED_ORIGINS": "http://localhost:5173",
+    "PREDICTIONS_ENABLED": "false",
+    "PREDICTION_BATCH_SIZE": "50",
+    "AzureWebJobs.predict_readings.Disabled": "true"
+  }
+}
