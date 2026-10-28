@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   pgadmin:
     image: dpage/pgadmin4
@@ -10,3 +8,18 @@ services:
     ports:
       - "5050:80"
     restart: unless-stopped
+
+  # Local edge broker
+  mqtt:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:18884:1883"
+    volumes:
+      - ./edge/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./edge/mosquitto/acl:/mosquitto/config/acl:ro
+      - ./.runtime/mqtt/passwords:/mosquitto/config/passwords:ro
+      - mqtt-data:/mosquitto/data
+
+volumes:
+  mqtt-data:

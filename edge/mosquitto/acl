@@ -1,0 +1,5 @@
+user simulator
+topic write lobster/LOBSTER_CAGE_VANPHONG_01/telemetry
+
+user gateway
+topic read lobster/LOBSTER_CAGE_VANPHONG_01/telemetry

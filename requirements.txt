@@ -1,0 +1,35 @@
+# One dependency source for local development, tests and deployment.
+# Section markers are also read by: python -m backend.package
+# Install everything locally: python -m pip install -r requirements.txt
+
+# [edge]
+# Simulator, authenticated MQTT and Azure IoT Hub gateway.
+# Azure IoT Device SDK 2.x requires Paho 1.x.
+paho-mqtt==1.6.1
+azure-iot-device==2.14.0
+python-dotenv>=1.0,<2
+tzdata>=2025.1
+
+# [backend]
+# Azure Function, rejected-payload storage and PostgreSQL ingestion.
+azure-functions>=1.21,<2
+azure-storage-blob>=12.24,<13
+psycopg2-binary>=2.9.10,<3
+fastapi>=0.115,<1
+PyJWT>=2.10,<3
+pwdlib[argon2]>=0.2,<1
+numpy>=1.26,<3
+# Azure/Linux uses CPU-only wheels; preserve the existing Windows research package.
+xgboost-cpu>=3.0,<4; sys_platform == 'linux'
+xgboost>=3.0,<4; sys_platform != 'linux'
+
+# [development]
+# Uvicorn is included in App Service API artifact; HTTP test client stays local.
+uvicorn>=0.34,<1
+httpx>=0.28,<1
+
+# [research]
+# Existing dataset generation, plots, preparation and model experiments.
+pandas>=2.2,<3
+matplotlib>=3.8,<4
+scikit-learn>=1.4,<2
