@@ -158,7 +158,17 @@ In Terminal C, at the root with the virtual environment activated:
 python -m uvicorn backend.api.main:app --host 127.0.0.1 --port 9000 --env-file .env.local
 ```
 
-Open http://localhost:9000/api/health, then http://localhost:9000/api/docs:
+Open http://localhost:9000/api/health, then http://localhost:9000/api/docs.
+
+### The API is also deployed on Azure App Service
+
+- **API base URL:** https://app-aquaculture-monitoring-api-dev-e5fegkf0fzapcedy.japanwest-01.azurewebsites.net
+- **Swagger:** [Open API docs](https://app-aquaculture-monitoring-api-dev-e5fegkf0fzapcedy.japanwest-01.azurewebsites.net/api/docs)
+- **Health check:** [Check API status](https://app-aquaculture-monitoring-api-dev-e5fegkf0fzapcedy.japanwest-01.azurewebsites.net/api/health)
+
+Set the frontend API base URL to this address. Sign in through `/api/auth/signin` and send `Authorization: Bearer <access_token>` for protected endpoints.
+
+For browser access, add the frontend origin to **App Service → Environment variables → App settings → `API_ALLOWED_ORIGINS`**, then save/apply. Use comma-separated origins, for example `http://localhost:5173,https://your-frontend.example.com`. Each origin includes the protocol, hostname, and port if needed, with no path or trailing slash. This configures CORS; JWT authentication is still required. For a local backend, set the same variable in `.env.local` and restart Uvicorn.
 
 ## 9. Stop the Demo and Restart Later
 
