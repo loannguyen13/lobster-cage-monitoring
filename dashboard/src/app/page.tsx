@@ -87,6 +87,27 @@ export default function Page() {
             ]}
           />
 
+          <div className="grid gap-4 lg:grid-cols-3">
+            <TimeChart
+              title="Nhiệt độ (°C)"
+              data={d.chartData}
+              height={220}
+              series={[{ key: "temperature", name: "Nhiệt độ (°C)", color: "#ef4444" }]}
+            />
+            <TimeChart
+              title="pH"
+              data={d.chartData}
+              height={220}
+              series={[{ key: "ph", name: "pH", color: "#8b5cf6" }]}
+            />
+            <TimeChart
+              title="Độ mặn (ppt)"
+              data={d.chartData}
+              height={220}
+              series={[{ key: "salinity", name: "Độ mặn (ppt)", color: "#0891b2" }]}
+            />
+          </div>
+
           <div className="grid gap-4 lg:grid-cols-2">
             <TimeChart
               title="Chlorophyll-a và độ đục"
