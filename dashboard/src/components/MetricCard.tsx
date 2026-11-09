@@ -9,11 +9,12 @@ const STYLE = {
 };
 
 export default function MetricCard({ label, value, unit, status = "ok", digits = 2 }: Props) {
+  const missing = value === undefined || Number.isNaN(value);
   return (
     <div className={`rounded-xl border p-4 shadow-sm ${STYLE[status]}`}>
       <p className="text-sm text-gray-600">{label}</p>
       <p className="mt-1 text-3xl font-semibold text-gray-900">
-        {value === undefined ? "--" : value.toFixed(digits)}{" "}
+        {missing ? "--" : value.toFixed(digits)}{" "}
         <span className="text-base font-normal text-gray-500">{unit}</span>
       </p>
     </div>

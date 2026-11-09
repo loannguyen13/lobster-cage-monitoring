@@ -4,25 +4,33 @@ export type EventLabel =
 
 export type Reading = {
   device_id: string;
-  timestamp: string;        // "2026-10-05T10:00:00"
-  temperature: number;      // °C
+  timestamp: string;
+  temperature: number;
   ph: number;
-  do: number;               // mg/L
-  salinity: number;         // ppt
-  turbidity: number;        // NTU
-  chlorophyll_a: number;    // µg/L
-  event_label?: EventLabel; // có thể không có khi chạy thật
-  do_pred_15m?: number;     // DO dự báo 15 phút tới (mock)
+  do: number;
+  salinity: number;
+  turbidity: number;
+  chlorophyll_a: number;
+  event_label?: EventLabel;
+  do_pred_15m?: number;
 };
+
+// Điểm trên biểu đồ: có thể chỉ có dự báo (chưa có số đo thật)
+export type ChartPoint = Partial<Reading> & { timestamp: string };
+
+// DO dự báo cho thời điểm target_at
+export type Prediction = { target_at: string; value: number; model?: string };
 
 export type Severity = "warning" | "critical";
 
 export type Alert = {
   id: string;
   start: string;
-  end: string;
+  end: string; // rỗng = cảnh báo đang mở
   level: Severity;
   message: string;
   minDO: number;
   points: number;
 };
+
+export type LiveInfo = { pondId: string; pondName: string; deviceId: string };

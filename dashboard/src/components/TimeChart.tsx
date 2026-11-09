@@ -3,14 +3,14 @@ import {
   CartesianGrid, Legend, Line, LineChart, ReferenceLine,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import type { Reading } from "@/types";
+import type { ChartPoint } from "@/types";
+import { fmtTime } from "@/lib/time";
 
 type Series = { key: string; name: string; color: string; dashed?: boolean };
 type Ref = { y: number; color: string; label: string };
-   const fmt = (t: unknown) => String(t).slice(5, 16).replace("T", " ");
 
 export default function TimeChart(props: {
-  title: string; data: Reading[]; series: Series[]; refs?: Ref[]; height?: number;
+  title: string; data: ChartPoint[]; series: Series[]; refs?: Ref[]; height?: number;
 }) {
   const { title, data, series, refs = [], height = 260 } = props;
   return (
@@ -22,9 +22,9 @@ export default function TimeChart(props: {
         <ResponsiveContainer width="100%" height={height}>
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="timestamp" tickFormatter={fmt} minTickGap={50} />
+            <XAxis dataKey="timestamp" tickFormatter={fmtTime} minTickGap={50} />
             <YAxis domain={["auto", "auto"]} />
-            <Tooltip labelFormatter={fmt} />
+            <Tooltip labelFormatter={fmtTime} />
             <Legend />
             {refs.map((r) => (
               <ReferenceLine key={r.y} y={r.y} stroke={r.color}
@@ -32,7 +32,7 @@ export default function TimeChart(props: {
             ))}
             {series.map((s) => (
               <Line key={s.key} dataKey={s.key} name={s.name} stroke={s.color}
-                dot={false} strokeWidth={2} isAnimationActive={false}
+                dot={false} strokeWidth={2} isAnimationActive={false} connectNulls
                 strokeDasharray={s.dashed ? "5 5" : undefined} />
             ))}
           </LineChart>
