@@ -42,6 +42,9 @@ xgboost>=3.0,<4
             self.assertEqual(build(root), target)
             self.assertFalse((target / "local.settings.json").exists())
             self.assertFalse((target / ".env.local").exists())
+            self.assertTrue(
+                (target / "backend/services/prediction_alerts.py").is_file()
+            )
             extra = target / "private.txt"
             extra.write_text("do not delete")
             with self.assertRaises(ValueError):

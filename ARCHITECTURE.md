@@ -17,7 +17,8 @@ flowchart LR
     ingest -->|Rejected payload| storage[("Storage Account\nPrivate Blob + host state")]
     storage -.->|Host checkpoints| ingest
     api["FastAPI\nApp Service deployment target"] -->|SQL over TLS| db
-    timer["Inference timer\nDisabled / implementation commented out"] -.-> db
+    timer["Inference timer\nEvery 5 min, disabled by default"] --> infer["Persistence + packaged XGBoost\ninside Function"]
+    infer -->|15-minute DO prediction| db
   end
   gateway -->|One six-metric message, Azure device SDK over MQTT TLS| hub
   pgadmin -->|SQL over TLS| db
@@ -183,10 +184,14 @@ internal port 8000 and exposes public HTTPS on port 443.
 | App Service/local API | PGHOST/PGPORT/PGDATABASE, API_PGUSER=lobster_api, API_PGPASSWORD, PGSSLROOTCERT |
 | App Service/local API | AUTH_JWT_SECRET, AUTH_TOKEN_MINUTES=60, API_ALLOWED_ORIGINS set to the frontend origin |
 | App Service build | SCM_DO_BUILD_DURING_DEPLOYMENT=true |
-| Disabled Function AI | PREDICTIONS_ENABLED=false, AzureWebJobs.predict_readings.Disabled=true |
+| Function inference | PREDICTIONS_ENABLED=false, AzureWebJobs.predict_readings.Disabled=true by default; the XGBoost model and metadata are packaged with the Function |
 
 The local/API ZIP CA path is `backend/certs/azure-postgresql-roots.pem`. In the
 Function artifact it is `/home/site/wwwroot/certs/azure-postgresql-roots.pem`.
-The two artifacts place the file differently. `.env.local` is not automatically
-uploaded as cloud settings. Do not store PostgreSQL administrator credentials in
-the Web App; the management CLI prompts for them separately when provisioning accounts.
+The two artifacts place the file differently. The inference Function loads its
+packaged model directly; it does not depend on a separate ML API URL. Enable
+`PREDICTIONS_ENABLED` and the `predict_readings` trigger setting only after the
+database migration and writer permissions have been verified. `.env.local` is not
+automatically uploaded as cloud settings. Do not store PostgreSQL administrator
+credentials in the Web App; the management CLI prompts for them separately when
+provisioning accounts.

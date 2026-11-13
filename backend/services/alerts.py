@@ -15,7 +15,18 @@ def evaluate(connection, device, pond, reading_id, measured_at, value):
         cur.execute('SELECT * FROM alert_rules WHERE pond_id=%s AND enabled=true ORDER BY id', (pond,))
         rules = cur.fetchall()
         for rule in rules:
-            cur.execute("SELECT * FROM alerts WHERE rule_id=%s AND device_id=%s AND status='open' FOR UPDATE", (rule['id'], device))
+            cur.execute(
+                """
+                SELECT *
+                FROM alerts
+                WHERE rule_id = %s
+                  AND device_id = %s
+                  AND source_type = 'measured'
+                  AND status = 'open'
+                FOR UPDATE
+                """,
+                (rule['id'], device),
+            )
             active = cur.fetchone()
             # An episode retains the rules it opened with, even if configuration changes.
             thresholds = active['rule_snapshot'] if active else rule

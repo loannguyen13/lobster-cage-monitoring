@@ -7,7 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 APP_FILES = (
     "function_app.py", "host.json", "telemetry.py", "repository.py", ".funcignore", "__init__.py",
     "database.py", "ingestion.py", "services/__init__.py", "services/readings.py",
-    "services/alerts.py", "services/audit.py", "api/__init__.py", "api/main.py",
+    "services/alerts.py", "services/prediction_alerts.py", "services/audit.py",
+    "api/__init__.py", "api/main.py",
     "api/routes.py", "api/auth.py", "api/schemas.py",
     "prediction_job.py", "services/predictions.py",
     "services/accounts.py",

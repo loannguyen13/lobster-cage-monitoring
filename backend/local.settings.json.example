@@ -21,6 +21,8 @@
     "API_ALLOWED_ORIGINS": "http://localhost:5173",
     "PREDICTIONS_ENABLED": "false",
     "PREDICTION_BATCH_SIZE": "50",
+    "PREDICTION_MAX_READING_AGE_MINUTES": "15",
+    "PREDICTION_MODEL_VERSION": "xgboost-do-15m-v1",
     "AzureWebJobs.predict_readings.Disabled": "true"
   }
 }

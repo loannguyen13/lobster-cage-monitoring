@@ -206,6 +206,7 @@ class PostgresTests(unittest.TestCase):
         from backend.services.predictions import run_batch
         device = self.new_device()
         payload = self.reading(device,0,5.5)
+        payload['timestamp'] = (datetime.now(timezone.utc)-timedelta(minutes=1)).isoformat()
         with self.writer:
             save_reading(self.writer,payload,'pond-gateway-01')
         with self.writer:
