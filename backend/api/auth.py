@@ -1,10 +1,11 @@
 """Local JWT authentication with database-backed revocation and current roles."""
 import os
+import time
 from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from psycopg2.extras import RealDictCursor
@@ -51,7 +52,7 @@ def unauthorized():
                          headers={'WWW-Authenticate':'Bearer'})
 
 
-def principal(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
+def principal(request: Request, credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
     key = signing_key()
     if credentials is None:
         raise unauthorized()
@@ -66,15 +67,23 @@ def principal(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)
     except (jwt.PyJWTError,ValueError,TypeError,AttributeError):
         raise unauthorized() from None
     # Each request checks session revocation and the CURRENT role, not a stale JWT role.
-    with session(api=True) as connection, connection.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute('''SELECT u.id,u.username,u.role FROM auth_sessions s JOIN users u ON u.id=s.user_id
-            WHERE s.id=%s AND s.user_id=%s AND s.revoked_at IS NULL AND s.expires_at>now() AND u.enabled''',
-            (sid,user_id))
-        user = cur.fetchone()
-    if user is None:
-        raise unauthorized()
-    return {'actor':f"user:{user['id']}",'user_id':user['id'],'username':user['username'],
-            'roles':{user['role']},'session_id':sid}
+    started = time.perf_counter()
+    with session(api=True) as connection:
+        request.state.db_connect_ms = (time.perf_counter() - started) * 1000
+        with connection.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute('''SELECT u.id,u.username,u.role FROM auth_sessions s JOIN users u ON u.id=s.user_id
+                WHERE s.id=%s AND s.user_id=%s AND s.revoked_at IS NULL AND s.expires_at>now() AND u.enabled''',
+                (sid,user_id))
+            user = cur.fetchone()
+        if user is None:
+            raise unauthorized()
+        # Request-scoped reuse: never cache roles or share a connection across requests.
+        request.state.api_connection = connection
+        try:
+            yield {'actor':f"user:{user['id']}",'user_id':user['id'],'username':user['username'],
+                   'roles':{user['role']},'session_id':sid}
+        finally:
+            del request.state.api_connection
 
 
 def operator(user=Depends(principal)):

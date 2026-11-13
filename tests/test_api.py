@@ -77,6 +77,39 @@ class ApiTests(unittest.TestCase):
         response = self.client.post('/api/auth/signin',json={'username':'demo','password':'x','role':'Admin'})
         self.assertEqual(response.status_code,422)
 
+    def test_read_request_reuses_auth_connection_and_rechecks_session(self):
+        key = 'test-only-secret-not-for-production-12345'
+        now = datetime.now(timezone.utc)
+        token = jwt.encode({'iss':'lobster-dashboard', 'aud':'lobster-dashboard-api',
+                            'sub':'1', 'sid':str(uuid4()), 'exp':now+timedelta(minutes=5),
+                            'iat':now, 'nbf':now}, key, algorithm='HS256')
+        with patch.dict(os.environ, {'AUTH_JWT_SECRET':key}), \
+             patch('backend.api.auth.session') as session, \
+             patch('backend.api.routes.rows', return_value=[]) as rows:
+            connection = session.return_value.__enter__.return_value
+            cur = connection.cursor.return_value.__enter__.return_value
+            cur.fetchone.return_value = {'id':1, 'username':'viewer', 'role':'Viewer'}
+            response = self.client.get('/api/ponds', headers={'Authorization':f'Bearer {token}'})
+            self.assertEqual(response.status_code, 200)
+            session.assert_called_once_with(api=True)
+            self.assertIs(rows.call_args.args[0], connection)
+            session.return_value.__exit__.assert_called_once_with(None, None, None)
+            self.assertIn('dbconnect;dur=', response.headers['Server-Timing'])
+            self.assertNotIn('api_connection', response.text)
+            # Revocation must be checked again, not served from a cached principal.
+            cur.fetchone.return_value = None
+            response = self.client.get('/api/ponds', headers={'Authorization':f'Bearer {token}'})
+            self.assertEqual(response.status_code, 401)
+            self.assertEqual(session.call_count, 2)
+            self.assertEqual(rows.call_count, 1)
+
+    def test_invalid_token_does_not_open_connection(self):
+        with patch.dict(os.environ, {'AUTH_JWT_SECRET':'test-only-secret-not-for-production-12345'}), \
+             patch('backend.api.auth.session') as session:
+            response = self.client.get('/api/ponds', headers={'Authorization':'Bearer invalid'})
+            self.assertEqual(response.status_code, 401)
+            session.assert_not_called()
+
     def test_azure_entrypoint_indexes_both_triggers(self):
         from backend.function_app import app as azure_app
         functions = {f.get_function_name(): f.get_bindings_dict() for f in azure_app.get_functions()}

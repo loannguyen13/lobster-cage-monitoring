@@ -1,18 +1,18 @@
 import argparse
 import csv
-import json
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import NAMESPACE_URL, uuid5
 from zoneinfo import ZoneInfo
 
-from backend.telemetry import FEATURES, encode, validate
+from backend.telemetry import FEATURES, validate
+from edge.sensor_telemetry import split_reading, encode, topic_for
 from edge.mqtt import ROOT, load_settings, make_client
 
 
 def read_payloads(path, source_timezone="Asia/Ho_Chi_Minh", device=None):
-    """Preflight the whole CSV before publishing anything; preserve source time."""
+    """Preflight CSV rows; reference bundles are split before MQTT publication."""
     previous = {}
     payloads = []
     with Path(path).open(encoding="utf-8-sig", newline="") as source:
@@ -56,6 +56,7 @@ def main():
     parser.add_argument("--scenario", choices=["normal", "intermittent-connection", "missing-data"], default="normal")
     parser.add_argument("--drop-every", type=int, default=8)
     parser.add_argument("--missing-sensor", choices=FEATURES, default="do")
+    parser.add_argument('--sensor', choices=FEATURES, help='Publish only this metric (one simulated sensor)')
     args = parser.parse_args()
     if args.limit < 1 or args.start_row < 0 or args.interval < 1 or args.drop_every < 1:
         parser.error("limit/drop-every >= 1, start-row >= 0, interval >= 1 second")
@@ -66,23 +67,27 @@ def main():
     load_settings()
     client = None
     if not args.dry_run:
-        client = make_client("lobster-simulator", "SIMULATOR")
+        client = make_client('lobster-simulator' + (f'-{args.sensor}' if args.sensor else ''), 'SIMULATOR')
         client.loop_start()
     try:
         for index, payload in enumerate(payloads, 1):
-            if args.scenario == "intermittent-connection" and index % args.drop_every == 0:
-                print(f"step={index} simulated missing transmission")
-            else:
-                body = encode(payload)
-                if args.scenario == "missing-data":
-                    del payload["readings"][args.missing_sensor]
-                    body = json.dumps(payload, separators=(",", ":")).encode()
+            for sensor in split_reading(payload):
+                if args.sensor and sensor['metric'] != args.sensor:
+                    continue
+                missing = sensor['metric'] == args.missing_sensor and (
+                    args.scenario == 'missing-data' or
+                    (args.scenario == 'intermittent-connection' and index % args.drop_every == 0))
+                if missing:
+                    print(f"step={index} omitted metric={sensor['metric']} timestamp={sensor['timestamp']}")
+                    continue
+                body = encode(sensor)
+                topic = topic_for(sensor)
                 if client:
-                    info = client.publish(f"lobster/{payload['device_id']}/telemetry", body, qos=1, retain=False)
+                    info = client.publish(topic, body, qos=1, retain=False)
                     info.wait_for_publish(timeout=15)
                     if not info.is_published():
                         raise RuntimeError("MQTT publish was not acknowledged; stop replay")
-                print(f"step={index} id={payload['message_id']} bytes={len(body)} timestamp={payload['timestamp']}")
+                print(f"step={index} topic={topic} bytes={len(body)} payload={body.decode('utf-8')}")
             if client and index < len(payloads):
                 time.sleep(args.interval)
     finally:

@@ -5,7 +5,6 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from psycopg2.extras import RealDictCursor
 
-from backend.database import session
 from backend.api.auth import principal, operator, admin
 from backend.api.schemas import Acknowledgment, time_range
 from backend.services.audit import acknowledged
@@ -13,9 +12,9 @@ from backend.services.audit import acknowledged
 router = APIRouter(prefix='/api', dependencies=[Depends(principal)])
 
 
-def database():
-    with session(api=True) as connection:
-        yield connection
+def database(request: Request, _user=Depends(principal)):
+    # principal keeps this request's authenticated connection open until cleanup.
+    return request.state.api_connection
 
 
 def rows(db, sql, params=()):

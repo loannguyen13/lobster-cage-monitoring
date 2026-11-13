@@ -1,5 +1,5 @@
 user simulator
-topic write lobster/LOBSTER_CAGE_VANPHONG_01/telemetry
+topic write lobster/LOBSTER_CAGE_VANPHONG_01/sensors/+
 
 user gateway
-topic read lobster/LOBSTER_CAGE_VANPHONG_01/telemetry
+topic read lobster/LOBSTER_CAGE_VANPHONG_01/sensors/+

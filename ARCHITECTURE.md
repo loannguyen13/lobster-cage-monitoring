@@ -6,9 +6,9 @@
 flowchart LR
   subgraph local["Local machine / edge"]
     csv["Synthetic CSV"] --> sim["Python simulator"]
-    sim -->|MQTT QoS 1, localhost 18884| mqtt["Mosquitto\nDocker"]
-    mqtt --> gateway["Python gateway"]
-    gateway <--> queue[("SQLite outbox")]
+    sim -->|Six single-metric messages, MQTT QoS 1, localhost 18884| mqtt["Mosquitto\nDocker"]
+    mqtt -->|lobster/device_id/sensors/+| gateway["Python gateway: assemble same device and event time"]
+    gateway <--> queue[("SQLite sensor groups and outbox")]
     pgadmin["pgAdmin\nDocker 5050 / Desktop"]
   end
   subgraph azure["Azure - RG-project"]
@@ -19,7 +19,7 @@ flowchart LR
     api["FastAPI\nApp Service deployment target"] -->|SQL over TLS| db
     timer["Inference timer\nDisabled / implementation commented out"] -.-> db
   end
-  gateway -->|Azure device SDK over TLS| hub
+  gateway -->|One six-metric message, Azure device SDK over MQTT TLS| hub
   pgadmin -->|SQL over TLS| db
   ui["Swagger / future Dashboard frontend"] -->|HTTPS + JWT| api
   apiLocal["Alternative local FastAPI\n127.0.0.1:9000"] -->|SQL over TLS| db

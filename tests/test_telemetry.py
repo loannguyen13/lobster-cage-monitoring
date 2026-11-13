@@ -8,6 +8,7 @@ from backend.telemetry import InvalidTelemetry, decode, encode, validate
 from edge.gateway import accept_message
 from edge.outbox import Outbox
 from edge.simulator import ROOT, read_payloads
+from edge.sensor_telemetry import split_reading, topic_for, encode as encode_sensor
 
 
 class TelemetryTests(unittest.TestCase):
@@ -76,12 +77,18 @@ class TelemetryTests(unittest.TestCase):
             validate(payload)
 
     def test_topic_identity_and_allowlist(self):
-        payload = self.payload()
+        payload = next(split_reading(self.payload()))
         device = payload["device_id"]
+        body = encode_sensor(payload)
+        self.assertEqual(accept_message(topic_for(payload), body, {device}), payload)
         with self.assertRaises(InvalidTelemetry):
-            accept_message("lobster/wrong/telemetry", encode(payload), {device})
+            accept_message("lobster/wrong/sensors/temperature", body, {device})
         with self.assertRaises(InvalidTelemetry):
-            accept_message(f"lobster/{device}/telemetry", encode(payload), {"other"})
+            accept_message(topic_for(payload), body, {"other"})
+        with self.assertRaises(InvalidTelemetry):
+            accept_message(f"lobster/{device}/sensors/do", body, {device})
+        with self.assertRaises(InvalidTelemetry):
+            accept_message(f"lobster/{device}/telemetry", body, {device})
 
     def test_outbox_restart_duplicate_conflict_and_budget(self):
         with tempfile.TemporaryDirectory() as directory:

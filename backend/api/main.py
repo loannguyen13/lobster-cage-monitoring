@@ -1,6 +1,7 @@
 """Local: python -m uvicorn backend.api.main:app --host 127.0.0.1 --port 9000."""
 import logging
 import os
+import time
 from uuid import uuid4
 import psycopg2
 from fastapi import FastAPI, Request
@@ -20,8 +21,13 @@ app.add_middleware(CORSMiddleware,
 @app.middleware('http')
 async def request_id(request: Request, call_next):
     request.state.request_id = str(uuid4())
+    started = time.perf_counter()
     response = await call_next(request)
     response.headers['X-Request-ID'] = request.state.request_id
+    timing = f'app;dur={(time.perf_counter() - started) * 1000:.3f}'
+    if hasattr(request.state, 'db_connect_ms'):
+        timing += f', dbconnect;dur={request.state.db_connect_ms:.3f}'
+    response.headers['Server-Timing'] = timing
     return response
 
 
