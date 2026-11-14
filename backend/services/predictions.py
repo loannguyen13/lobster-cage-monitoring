@@ -115,7 +115,7 @@ def _predict_xgboost(model, reading):
 
 
 def _fetch_pending_readings(connection, limit):
-    """Lock fresh, eligible readings that lack a prediction for this model."""
+    """Fetch fresh, eligible readings that lack a prediction for this model."""
     model_version = _get_model_version()
     max_age_minutes = _get_max_reading_age_minutes()
 
@@ -155,7 +155,6 @@ def _fetch_pending_readings(connection, limit):
           )
         ORDER BY r.timestamp ASC, r.id ASC
         LIMIT %s
-        FOR UPDATE OF r SKIP LOCKED
     """
 
     with connection.cursor() as cursor:
