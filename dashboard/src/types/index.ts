@@ -18,10 +18,17 @@ export type Reading = {
 // Điểm trên biểu đồ: có thể chỉ có dự báo (chưa có số đo thật)
 export type ChartPoint = Partial<Reading> & { timestamp: string };
 
-// DO dự báo cho thời điểm target_at
-export type Prediction = { target_at: string; value: number; model?: string };
+// DO dự báo cho thời điểm target_at (đối chiếu theo target_at, không theo generated_at)
+export type Prediction = {
+  target_at: string;
+  value: number;
+  model?: string;
+  generated_at?: string;
+  horizon_minutes?: number;
+};
 
 export type Severity = "warning" | "critical";
+export type AlertSource = "measured" | "predicted";
 
 export type Alert = {
   id: string;
@@ -31,6 +38,11 @@ export type Alert = {
   message: string;
   minDO: number;
   points: number;
+  source: AlertSource;
+  status?: "open" | "resolved";
 };
+
+// Ngưỡng cảnh báo DO (lấy từ luật của hệ thống, không viết cứng)
+export type Thresholds = { warning: number; critical: number; recovery: number };
 
 export type LiveInfo = { pondId: string; pondName: string; deviceId: string };

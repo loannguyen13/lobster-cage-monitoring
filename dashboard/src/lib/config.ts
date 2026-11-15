@@ -10,3 +10,6 @@ export const POLL_MS = Number(process.env.NEXT_PUBLIC_POLL_MS || 5000);
 export const WINDOW = 144; // số điểm giữ trên biểu đồ (chế độ Phát lại)
 export const LIVE_WINDOW = 288; // số điểm giữ trên biểu đồ (chế độ Trực tiếp, 24 giờ)
 export const PREFERRED_DEVICE = "LOBSTER_CAGE_VANPHONG_01";
+
+// Chỉ vẽ đường dự báo của mô hình này (backend còn lưu cả mô hình persistence làm chuẩn so sánh)
+export const PRIMARY_MODEL = "xgboost";

@@ -1,7 +1,7 @@
 import { API_BASE } from "@/lib/config";
 import { AuthError, getToken, setToken } from "@/lib/auth";
-import { asList, ms, pick, sortAsc, toAlert, toPrediction, toReading } from "@/lib/normalize";
-import type { Alert, Prediction, Reading } from "@/types";
+import { asList, ms, pick, sortAsc, toAlert, toPrediction, toReading, toThresholds } from "@/lib/normalize";
+import type { Alert, Prediction, Reading, Thresholds } from "@/types";
 
 export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
@@ -88,11 +88,45 @@ export async function getAlerts(pondId: string): Promise<Alert[]> {
   return asList(await apiFetch(`/api/alerts?${q.toString()}`)).map((r, i) => toAlert(r, i));
 }
 
-export async function getPredictions(deviceId: string, limit = 144): Promise<Prediction[]> {
+// Dự báo DO. Giống /api/readings, nên truyền from/to (theo target_at) quanh thời
+// điểm của số liệu mới nhất. Nếu khoảng đó rỗng thì thử /api/predictions/latest.
+export async function getPredictions(
+  deviceId: string,
+  limit = 144,
+  range?: { from: string; to: string }
+): Promise<Prediction[]> {
   const q = new URLSearchParams({ device_id: deviceId, limit: String(limit) });
-  return asList(await apiFetch(`/api/predictions?${q.toString()}`))
+  if (range) {
+    q.set("from", range.from);
+    q.set("to", range.to);
+  }
+  const parse = (data: unknown) =>
+    asList(data)
+      .map(toPrediction)
+      .filter((p): p is Prediction => p !== null);
+
+  const list = parse(await apiFetch(`/api/predictions?${q.toString()}`));
+  if (list.length > 0 || !range) return list;
+  return parse(await apiFetch(`/api/predictions/latest?device_id=${encodeURIComponent(deviceId)}`));
+}
+
+// Ngưỡng DO của ao (GET /api/alert-rules); trả null nếu chưa có luật
+export async function getAlertThresholds(pondId: string): Promise<Thresholds | null> {
+  return toThresholds(asList(await apiFetch(`/api/alert-rules?pond_id=${encodeURIComponent(pondId)}`)));
+}
+
+// Dự báo mới nhất theo từng mô hình (GET /api/predictions/latest)
+export async function getLatestPredictions(
+  deviceId: string
+): Promise<{ items: Prediction[]; dataSource?: string }> {
+  const data = await apiFetch<unknown>(`/api/predictions/latest?device_id=${encodeURIComponent(deviceId)}`);
+  const items = asList(data)
     .map(toPrediction)
     .filter((p): p is Prediction => p !== null);
+  const ds = data && typeof data === "object" && !Array.isArray(data)
+    ? pick(data as Record<string, unknown>, "data_source")
+    : undefined;
+  return { items, dataSource: ds === undefined ? undefined : String(ds) };
 }
 
 export async function logout() {

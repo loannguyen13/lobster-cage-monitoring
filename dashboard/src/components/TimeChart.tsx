@@ -13,6 +13,19 @@ export default function TimeChart(props: {
   title: string; data: ChartPoint[]; series: Series[]; refs?: Ref[]; height?: number;
 }) {
   const { title, data, series, refs = [], height = 260 } = props;
+  // Dữ liệu thưa (vài điểm) thì hiện chấm để thấy được từng điểm; dữ liệu dày thì ẩn cho gọn
+  const sparse = data.length <= 40;
+
+  // Có đường ngưỡng thì trục Y phải bao cả các ngưỡng, nếu không ngưỡng bị nằm ngoài khung nhìn
+  const refYs = refs.map((r) => r.y);
+    const yDomain: ["auto", "auto"] | ((d: readonly [number, number]) => [number, number]) =
+    refYs.length > 0
+      ? ([min, max]: readonly [number, number]) => [
+          Math.floor(Math.min(min, ...refYs)),
+          Math.ceil(Math.max(max, ...refYs)),
+        ]
+      : ["auto", "auto"];
+
   return (
     <div className="rounded-xl border bg-white p-4 shadow-sm">
       <h3 className="mb-2 font-medium">{title}</h3>
@@ -23,7 +36,7 @@ export default function TimeChart(props: {
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="timestamp" tickFormatter={fmtTime} minTickGap={50} />
-            <YAxis domain={["auto", "auto"]} />
+            <YAxis domain={yDomain} />
             <Tooltip labelFormatter={fmtTime} />
             <Legend />
             {refs.map((r) => (
@@ -32,7 +45,7 @@ export default function TimeChart(props: {
             ))}
             {series.map((s) => (
               <Line key={s.key} dataKey={s.key} name={s.name} stroke={s.color}
-                dot={false} strokeWidth={2} isAnimationActive={false} connectNulls
+                dot={sparse ? { r: 3 } : false} strokeWidth={2} isAnimationActive={false} connectNulls
                 strokeDasharray={s.dashed ? "5 5" : undefined} />
             ))}
           </LineChart>

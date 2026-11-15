@@ -1,4 +1,4 @@
-import type { Alert, ChartPoint, Prediction, Reading, Severity } from "@/types";
+import type { Alert, AlertSource, ChartPoint, Prediction, Reading, Severity, Thresholds } from "@/types";
 
 export type Raw = Record<string, unknown>;
 
@@ -82,26 +82,67 @@ export function toPrediction(raw: Raw): Prediction | null {
   }
   if (value === undefined) return null;
   const model = pick(raw, "model_used", "model");
-  return { target_at: target, value, model: model === undefined ? undefined : String(model) };
+  const generated = pick(raw, "generated_at", "created_at");
+  return {
+    target_at: target,
+    value,
+    model: model === undefined ? undefined : String(model),
+    generated_at: typeof generated === "string" ? generated : undefined,
+    horizon_minutes: numOr(pick(raw, "horizon_minutes")),
+  };
 }
 
 export function toAlert(raw: Raw, index = 0): Alert {
   const start = String(
     pick(raw, "opened_at", "started_at", "start_time", "triggered_at", "created_at", "timestamp") ?? ""
   );
-  const status = String(pick(raw, "status") ?? "");
-  const end = /open/i.test(status)
+  const status = String(pick(raw, "status") ?? "").toLowerCase();
+  const isOpen = /open/.test(status);
+  const end = isOpen
     ? ""
-    : String(pick(raw, "resolved_at", "closed_at", "ended_at", "last_seen_at", "updated_at") ?? start);
+    : String(pick(raw, "resolved_at", "closed_at", "ended_at", "last_observed_at", "last_seen_at", "updated_at") ?? start);
   const sev = String(pick(raw, "severity", "level") ?? "").toLowerCase();
   const level: Severity = /crit|high|severe|danger|nguy/.test(sev) ? "critical" : "warning";
+  const source: AlertSource = /pred/i.test(String(pick(raw, "source_type", "source") ?? "")) ? "predicted" : "measured";
+  // Ngưỡng lấy từ rule_snapshot của chính cảnh báo đó
+  const snap = raw["rule_snapshot"];
+  const limit = isObj(snap) ? numOr(pick(snap, level === "critical" ? "critical_below" : "warning_below")) : undefined;
+  const label = source === "predicted" ? "DO dự báo" : "DO";
+  const message = limit !== undefined
+    ? `${label} < ${limit} mg/L`
+    : String(pick(raw, "message", "title", "rule_name", "description") ?? "Cảnh báo");
   return {
     id: String(pick(raw, "id", "alert_id") ?? index),
-    start, end, level,
-    message: String(pick(raw, "message", "title", "rule_name", "description") ?? "Cảnh báo"),
-    minDO: numOr(pick(raw, "min_value", "peak_value", "trigger_value", "observed_value", "value")) ?? NaN,
+    start, end, level, message,
+    minDO: numOr(pick(raw, "worst_value", "min_value", "peak_value", "observed_value", "value")) ?? NaN,
     points: 1,
+    source,
+    status: isOpen ? "open" : "resolved",
   };
+}
+
+// Ngưỡng DO từ GET /api/alert-rules
+export function toThresholds(rules: Raw[]): Thresholds | null {
+  const rule = rules.find((r) => pick(r, "code") === "low_do" || pick(r, "metric") === "dissolved_oxygen") ?? rules[0];
+  if (!rule) return null;
+  const warning = numOr(pick(rule, "warning_below"));
+  const critical = numOr(pick(rule, "critical_below"));
+  if (warning === undefined || critical === undefined) return null;
+  return { warning, critical, recovery: numOr(pick(rule, "recovery_above")) ?? warning };
+}
+
+// Sai số giữa DO dự báo và DO thực tế tại cùng thời điểm (MAE, RMSE)
+export function forecastError(points: ChartPoint[]): { mae: number; rmse: number; n: number } | null {
+  let n = 0, abs = 0, sq = 0;
+  for (const p of points) {
+    if (p.do === undefined || p.do_pred_15m === undefined) continue;
+    if (Number.isNaN(p.do) || Number.isNaN(p.do_pred_15m)) continue;
+    const e = p.do_pred_15m - p.do;
+    abs += Math.abs(e);
+    sq += e * e;
+    n += 1;
+  }
+  return n === 0 ? null : { mae: abs / n, rmse: Math.sqrt(sq / n), n };
 }
 
 // Ghép DO dự báo vào các điểm đo thật (khớp thời gian ±2,5 phút),
